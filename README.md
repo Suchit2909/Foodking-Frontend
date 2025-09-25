@@ -1,3 +1,27 @@
+# 🍔 FoodKing Frontend - Online Food Ordering System
+
+This is the **frontend application** for the FoodKing Online Food Ordering System, built with **React**.  
+It provides an interactive user interface for browsing restaurants, viewing menus, adding items to the cart, and placing orders.
+
+
+## 🚀 Features
+- User login & registration
+- Browse restaurants and menus
+- Search and filter food items
+- Add items to cart and manage cart
+- Place orders
+- Admin panel to manage products
+
+  ## 🛠️ Technologies Used
+- **React 18+**
+- **Redux Toolkit** (state management)
+- **React Router** (routing)
+- **Axios** (API calls)
+- **Tailwind CSS / Material UI** (UI components)
+- **Razorpay** (payment gateway, if integrated)
+
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
