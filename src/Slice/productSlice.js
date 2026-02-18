@@ -1,11 +1,12 @@
-import { createSlice, createAsyncThunk, isRejectedWithValue } from "@reduxjs/toolkit";
-import axios from "axios";
-import { data } from "react-router-dom";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+
+  import API from "../Utils/api";
+
 
 export const addProduct = createAsyncThunk('products/add' , async (product, {getState}) =>{
     const token = getState().authentication.token || localStorage.getItem('token');
-    const res = await axios.post(
-        'http://localhost:8080/api/admin/product/create',
+    const res = await API.post(
+        '/admin/product/create',
         product,{
             headers: {
         Authorization: `Bearer ${token}`,
@@ -23,8 +24,8 @@ export const updateProduct = createAsyncThunk(
     try {
       const token = getState().authentication.token || localStorage.getItem('token');
 
-      const res = await axios.put(
-        `http://localhost:8080/api/admin/product/update/${id}`,
+      const res = await API.put(
+        `/admin/product/update/${id}`,
         {
           ...data,
           categoryId: Number(data.categoryId), // ensure numeric
@@ -48,18 +49,34 @@ export const updateProduct = createAsyncThunk(
 
 
 export const fetchProducts = createAsyncThunk(
-    'products/fetchProducts', async () =>{
-        const response = await axios.get("http://localhost:8080/api/auth/all");
-        return response.data;
+  'products/fetchProducts',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().authentication.token || localStorage.getItem('token');
+
+      const response = await API.get(
+        "/auth/all",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // <-- important
+          },
+        }
+      );
+
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Failed to fetch products");
     }
+  }
 );
 
 
 export const fetchProductById = createAsyncThunk(
     'products/fetchProductById',
-    async(id, {rejectWithValue} ) =>{
+    async(id, {getState, rejectWithValue} ) =>{
 try{ 
-    const response = await axios.get(`http://localhost:8080/api/auth/${id}`);
+   const token = getState().authentication.token || localStorage.getItem('token');
+    const response = await API.get(`/auth/${id}`);
     return response.data;
 }catch (error) {
     return rejectWithValue(error.response?.data?.message  || "something went wrong");
@@ -73,9 +90,10 @@ export const deleteProduct = createAsyncThunk(
   'products/delete',
   async (productId, { getState, rejectWithValue }) => {
     try {
-      const token = getState().auth.token || localStorage.getItem('token');
+      const token = getState().authentication.token || localStorage.getItem('token');
+      console.log("deleteProduct: productId=", productId, "token present?", !!token);
 
-      const response = await axios.delete(
+      const response = await API.delete(
         `http://localhost:8080/api/admin/product/delete/${productId}`,
         {
           headers: {
@@ -83,12 +101,18 @@ export const deleteProduct = createAsyncThunk(
           },
         }
       );
-      return productId; // returning ID to remove it from state
+
+      console.log("deleteProduct response status:", response.status, response.data);
+      // If API returns success, return the id to remove from state
+      return productId;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      console.error("deleteProduct error:", err);
+      const payload = err?.response?.data || { message: err.message || "Delete failed" };
+      return rejectWithValue(payload);
     }
   }
 );
+
 
 const productSlice = createSlice({
     name : "products",
@@ -116,7 +140,7 @@ const productSlice = createSlice({
         })
         .addCase(fetchProducts.rejected ,(state,action)=>{
             state.loading=false;
-            state.error = "Failed to load Products";
+            state.error = action.error?.message || "Failed to load Products";
         });
 
 
@@ -135,7 +159,6 @@ const productSlice = createSlice({
         })
         .addCase(updateProduct.fulfilled, (state, action) => {
   state.loading = false;
-  // update the product in the state.data array
   const index = state.data.findIndex(p => p.id === action.payload.id);
   if (index !== -1) {
     state.data[index] = action.payload;
@@ -144,7 +167,16 @@ const productSlice = createSlice({
 .addCase(updateProduct.rejected, (state, action) => {
   state.loading = false;
   state.error = action.payload || "Failed to update product";
-});
+})
+
+   .addCase(deleteProduct.fulfilled, (state, action) => {
+  const idToRemove = action.payload;
+  state.data = state.data.filter(p => String(p.id) !== String(idToRemove));
+  state.loading = false;
+})
+.addCase(deleteProduct.rejected, (state, action) => {
+  state.error = action.payload || "Failed to delete product";
+})
     },
 });
 

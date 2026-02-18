@@ -8,7 +8,7 @@ const Login = () => {
   const [form, setForm] = useState({ username: "", password: "" });
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { username, password, token, role, loading, error, cartId ,userId} = useSelector((state) => state.authentication);
+  const {token, role, loading, error, userId} = useSelector((state) => state.authentication);
 
    const cartState = useSelector((state) => state.cart); 
 
@@ -18,12 +18,11 @@ const Login = () => {
         const result = await dispatch(loginUser(form)).unwrap();
            console.log("Login successful:", result);
      
-      
-      
     } catch (err) {
       console.error("Login error:", err);
     }
   };
+  
 
   useEffect(() => {
     if (token && userId) {
@@ -38,8 +37,7 @@ const Login = () => {
   }, [token, cartState.cartId, dispatch]);
 
  useEffect(() => {
-  console.log("Login Navigation Debug:", { token, role });
-  if (token && role && role !== "undefined") {
+  if (token && role) {
     setForm({ username: "", password: "" });
     navigate(role === "ADMIN" ? "/admin" : "/user", { replace: true });
   }

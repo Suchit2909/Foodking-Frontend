@@ -22,10 +22,12 @@ import { fetchCartItemsByUser } from "../Slice/cartSlice";
     console.log("selectedAddressId", selectedAddressId);
     const { items: cartItems, loading: cartLoading } = useSelector((state) => state.cart);
 
-    useEffect(() => {
-      dispatch(getAddress());
-      dispatch(fetchCartItemsByUser());
-    }, [dispatch]);
+   useEffect(() => {
+  if (token) {
+    dispatch(getAddress());
+    dispatch(fetchCartItemsByUser());
+  }
+}, [dispatch, token]);
 
     const calculateTotal = () => {
       return cartItems.reduce((acc, item) => {
@@ -161,14 +163,16 @@ import { fetchCartItemsByUser } from "../Slice/cartSlice";
     )}
   </div> */}
         <div className="text-right">
-          {token && selectedAddressId ? (
-    <RazorpayCheckout
-      amountInCents={calculateTotal()}
+         {token && selectedAddressId && cartItems.length > 0 ? (
+  <RazorpayCheckout
+    amountInRupees={calculateTotal()}
     selectedAddressId={selectedAddressId}
-    />
-  ) : (
-    <p className="text-red-500">Please select address and login to proceed.</p>
-  )}
+  />
+) : (
+  <p className="text-red-500">
+    Please login, select address and add items to cart.
+  </p>
+)}
         </div>
       </div>
       </>

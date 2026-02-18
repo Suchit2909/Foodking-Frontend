@@ -1,5 +1,6 @@
   import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-  import axios from "axios";
+ 
+  import API from "../Utils/api";
 
   export const addAddress = createAsyncThunk(
     'address/addAddress',
@@ -7,8 +8,8 @@
       try {
         const token = getState().authentication.token;
         
-        const response = await axios.post(
-          'http://localhost:8080/api/user/address/add',
+        const response = await API.post(
+          '/user/address/add',
           addressData,
           {
             headers: {
@@ -27,7 +28,7 @@
   export const getAddress = createAsyncThunk('address/getAddress',
       async(_, {getState}) =>{
         const token = getState().authentication.token;
-      const response = await axios.get("http://localhost:8080/api/user/address/list", {
+      const response = await API.get("/user/address/list", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,7 +41,7 @@
   export const deleteAddress = createAsyncThunk('address/deleteAddress',
       async(addressId,{getState})=>{
           const token = getState().authentication.token;
-      await axios.delete(`http://localhost:8080/api/user/address/delete/${addressId}`, {
+      await API.delete(`/user/address/delete/${addressId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -113,18 +113,24 @@ const AdminDashboard = () => {
     });
     setActiveView("update");
   };
-  const handleDeleteProduct = (id) => {
-  if (window.confirm("Are you sure you want to delete this product?")) {
-    dispatch(deleteProduct(id))
-      .unwrap()
-      .then(() => {
-        toast.success("🗑️ Product deleted successfully!");
-        dispatch(fetchProducts()); // Refresh product list
-      })
-      .catch((err) => {
-        toast.error("❌ Failed to delete product: " + err.message);
-      });
-  }
+  
+ const handleDeleteProduct = (id) => {
+  if (!window.confirm("Are you sure you want to delete this product?")) return;
+
+  console.log("Deleting id:", id, "current products count:", products.length);
+
+  dispatch(deleteProduct(id))
+    .unwrap()
+    .then(() => {
+      toast.success("🗑️ Product deleted successfully!");
+      // Option A: rely on slice to remove the item (recommended)
+      // Option B: if backend returns authoritative list, re-fetch
+      // dispatch(fetchProducts());
+    })
+    .catch((err) => {
+      console.error("Delete failed:", err);
+      toast.error("❌ Failed to delete product: " + (err?.message || JSON.stringify(err)));
+    });
 };
 
   return (

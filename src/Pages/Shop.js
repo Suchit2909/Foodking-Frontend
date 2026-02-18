@@ -42,7 +42,9 @@ const [priceRange, setPriceRange] = useState(DEFAULT_PRICE_RANGE);
   const [searchParams] = useSearchParams();
   
   const categoryFilter = searchParams.get("category");
-  const { cartId, isLoggedIn } = useSelector((state) => state.authentication);
+  const cartId = useSelector((state) => state.cart.cartId);
+const userId = useSelector((state) => state.authentication.userId);
+const isLoggedIn = !!userId;
 
   const [currentPage, setCurrentPage] = useState(0);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -62,11 +64,11 @@ const [priceRange, setPriceRange] = useState(DEFAULT_PRICE_RANGE);
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
   if (isLoggedIn && !cartId) {
-    dispatch(fetchCart({}));
+    dispatch(fetchCart(userId));
   }
-}, [isLoggedIn, cartId, dispatch]);
+}, [isLoggedIn, cartId, userId, dispatch]);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -112,22 +114,41 @@ useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
 
- const handleAddToCart = (product) => {
-   if (!cartId) {
-    toast.error("Cart is still initializing. Please wait...");
-    return;
+ const handleAddToCart = async (product) => {
+  try {
+    let currentCartId = cartId;
+
+    // 🔥 Step 1: Create cart if missing
+    if (!currentCartId) {
+      const res = await dispatch(fetchCart(userId));
+
+      if (!res.payload || !res.payload.id) {
+        throw new Error("Failed to create cart");
+      }
+
+      currentCartId = res.payload.id;
+    }
+
+    // 🔥 Step 2: Add item ONLY with valid cartId
+    await dispatch(
+      addCartItem({
+        cartId: currentCartId,
+        productId: product.id,
+        quantity: 1,
+      })
+    ).unwrap();
+
+    setAddedProducts((prev) => ({ ...prev, [product.id]: true }));
+    setTimeout(() => {
+      setAddedProducts((prev) => ({ ...prev, [product.id]: false }));
+    }, 2000);
+
+  } catch (err) {
+    console.error("Add to cart failed:", err);
+    toast.error("Failed to add item to cart");
   }
-
-  const payload = isLoggedIn
-    ? { cartId, productId: product.id, quantity: 1 }
-    : { productId: product.id, quantity: 1 };
-
-  dispatch(addCartItem(payload));
-  setAddedProducts((prev) => ({ ...prev, [product.id]: true }));
-  setTimeout(() => {
-    setAddedProducts((prev) => ({ ...prev, [product.id]: false }));
-  }, 2000);
 };
+
 
 
   const handleCategoryClick = (categoryName) => {

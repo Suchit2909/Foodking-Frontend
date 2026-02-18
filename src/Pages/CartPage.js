@@ -17,12 +17,13 @@ const CartPage = () => {
    
 
   const userId = useSelector((state) => state.authentication.userId);
+  console.log("UserId :-" + userId);
    
 useEffect(() => {
-    if (userId && token) {
+    if (userId) {
       dispatch(fetchCartItemsByUser(userId));
     }
-  }, [dispatch, userId, token]);
+  }, [dispatch, userId]);
 
   
 if (status === 'loading') {

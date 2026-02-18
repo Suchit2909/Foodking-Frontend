@@ -4,7 +4,7 @@ import logo from "../Assets/foodking-logo.svg";
 import { Link, NavLink } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../Slice/authSlice";
-import {  fetchCartItemsByUser, clearCartState} from "../Slice/cartSlice";
+import {  fetchCartItemsByUser, clearCart} from "../Slice/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { BsCart4 } from "react-icons/bs";
 import { GoHeart } from "react-icons/go";
@@ -40,13 +40,15 @@ console.log(auth);
     localStorage.removeItem("token");
     localStorage.removeItem("cartId");
     dispatch(logout());
-    dispatch(clearCartState());
-   
-
-    dispatch(fetchCartItemsByUser());
-
+    dispatch(clearCart());
     navigate("/");
   };
+
+  useEffect(() => {
+  if (token && role === "USER") {
+    dispatch(fetchCartItemsByUser());
+  }
+}, [token, role, dispatch]);
 
   const handleNavLinkClick = () => {
     setIsMenuOpen(false);

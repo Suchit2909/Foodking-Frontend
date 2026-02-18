@@ -1,90 +1,163 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
+import { useSelector , useDispatch} from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { clearCart } from "../Slice/cartSlice";
 
-const RazorpayCheckout = ({ amountInCents, selectedAddressId }) => {
+const BACKEND = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
+
+const RazorpayCheckout = ({ amountInRupees, selectedAddressId }) => {
   const token = useSelector((state) => state.authentication.token);
-  console.log(token);
- 
+  const user = useSelector((state) => state.authentication.userId);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!document.getElementById("razorpay-script")) {
+      const s = document.createElement("script");
+      s.id = "razorpay-script";
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.async = true;
+      document.body.appendChild(s);
+    }
+  }, []);
+
+  const toPaise = (rupees) => Math.round(Number(rupees) * 100);
 
   const handlePayment = async () => {
+    if (!token) {
+      alert("Please login to pay.");
+      return;
+    }
+
+    if (!selectedAddressId) {
+      alert("Please choose a delivery address.");
+      return;
+    }
+
+    const amountPaise = toPaise(amountInRupees);
+    if (!amountPaise || amountPaise <= 0) {
+      alert("Invalid amount");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      if (!token || !selectedAddressId) {
-        alert("Login and select an address before proceeding.");
+      // 1️⃣ Create order
+      const createResp = await fetch(
+        `${BACKEND}/api/user/payment/create-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            amount: amountPaise,
+            addressId: selectedAddressId,
+          }),
+        }
+      );
+
+      const orderData = await createResp.json();
+
+      console.log("Order response:", orderData);
+
+      if (!createResp.ok || !orderData.id) {
+        alert("Failed to create Razorpay order");
+        setLoading(false);
         return;
       }
-      const orderRequest = {
-  user: { username: localStorage.getItem("username") },
-  address: { id: selectedAddressId },
-};
 
-      const res = await fetch("http://localhost:8080/api/auth/payment/create-order", {
+      // 2️⃣ Razorpay options
+      const options = {
+        key: "rzp_test_RJTy244ttMYNmU", // TEST <KEY></KEY>
+        currency: "INR",
+        order_id: orderData.id, // ✅ FIXED
+        name: "Food Ordering App",
+        description: "Order Payment",
+
+        handler: async function (response) {
+  console.log("Payment Success:", response);
+
+  try {
+    const res = await fetch(
+      "http://localhost:8080/auth/user/order/place",
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ amount: amountInCents }),
-      });
+        body: JSON.stringify({
+          userId: user.id,                     // from redux auth
+          addressId: selectedAddressId,
+          amount: amountPaise,                 // in paise
+          paymentId: response.razorpay_payment_id,
+          paymentMethod: "RAZORPAY",
+        }),
+      }
+    );
 
-      const data = await res.json();
-      const orderData = JSON.parse(data.orderData);
+    if (!res.ok) {
+      throw new Error("Order save failed");
+    }
 
-      const options = {
-        key: "rzp_test_KOSn1qL4kA4iGD", 
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Food King",
-        description: "Secure Order Payment",
-        order_id: orderData.id,
-        handler: async function (response) {
-          alert("✅ Payment successful!\nID: " + response.razorpay_payment_id);
+    const savedOrder = await res.json();
+    console.log("Order saved:", savedOrder);
 
-          // 👇 Call your order placement API
-          const placeOrder = await fetch("http://localhost:8080/api/auth/payment/place-after-payment", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            
-            body: JSON.stringify({
-  orderRequest,
-  cartId: parseInt(localStorage.getItem("cartId")),
- 
-  paymentId: response.razorpay_payment_id,
-  razorpayOrderId: response.razorpay_order_id,
-   paymentMethod: "RAZORPAY",
-}),
- 
-          });
+    // 🔥 Clear cart in frontend
+    dispatch(clearCart());
 
-          const result = await placeOrder.text();
-          alert(result || "Order placed successfully!");
-          window.location.href = "/orders"; // Redirect to order history page
-        },
-        prefill: {
-          name: localStorage.getItem("username") || "",
-          email: localStorage.getItem("email") || "",
-        },
+    alert("Order placed successfully 🎉");
+    navigate(`/order-success/${savedOrder.id}`);
+
+  } catch (err) {
+    console.error(err);
+    alert("Payment done but order save failed");
+  } finally {
+    setLoading(false);
+  }
+},
+
+
         theme: {
-          color: "#3399cc",
+          color: "#16a34a", // Tailwind green-600
         },
       };
 
-      const razor = new window.Razorpay(options);
-      razor.open();
+      if (!window.Razorpay) {
+        alert("Razorpay SDK not loaded");
+        setLoading(false);
+        return;
+      }
+
+      const rzp = new window.Razorpay(options);
+
+      rzp.on("payment.failed", function (resp) {
+        console.error("Payment failed:", resp);
+        alert(resp.error?.description || "Payment failed");
+        setLoading(false);
+      });
+
+      rzp.open();
+
     } catch (err) {
-      console.error("Payment Error:", err);
-alert("❌ Payment failed to start.\nCheck console for details.");
+      console.error("Payment error:", err);
+      alert("Payment initialization failed");
+      setLoading(false);
     }
   };
 
   return (
     <button
       onClick={handlePayment}
-      className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+      disabled={loading}
+      className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
     >
-      Pay with Razorpay
+      {loading ? "Processing..." : `Pay ₹${Number(amountInRupees).toFixed(2)}`}
     </button>
   );
 };

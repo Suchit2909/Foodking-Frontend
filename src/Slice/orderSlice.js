@@ -1,30 +1,37 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
 
-export const placeOrder = createAsyncThunk('order/placeOrder',async({orderRequest,cartUserId},{thunkAPI,getState})=>{
-    try{
-        const token = getState().authentication.token;
-        const response = await axios.post(`http://localhost:8080/auth/user/order/place?cartUserId=${cartUserId}`,
-        orderRequest,
-    {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-           return response.data;
-    }catch (err) {
-        return thunkAPI.rejectWithValue(err.response?.data || err.message);
-        
+  import API from "../Utils/api";
+
+export const placeOrder = createAsyncThunk(
+  'order/placeOrder',
+  async ({ orderRequest }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().authentication.token;
+      const response = await API.post(
+        `/auth/user/order/place`,
+        orderRequest, // all necessary fields inside
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
     }
-});
+  }
+);
+
 
 export const fetchOrdersByUserId = createAsyncThunk(
   "orders/fetchByUserId",
   async (userId, { getState, rejectWithValue }) => {
     try {
       const token = getState().authentication.token;
-      const response = await axios.get(
-        `http://localhost:8080/auth/user/order/user/${userId}`,
+      const response = await API.get(
+        `/auth/user/order/user/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -44,8 +51,8 @@ export const fetchLatestOrderByUserId = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const token = getState().authentication.token;
-      const response = await axios.get(
-        `http://localhost:8080/auth/user/order/latest`, // No userId passed
+      const response = await API.get(
+        `/auth/user/order/latest`, // No userId passed
         {
           headers: {
             Authorization: `Bearer ${token}`,

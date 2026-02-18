@@ -29,7 +29,7 @@ export const saveGuestCart = (items) => localStorage.setItem('cartitems', JSON.s
         guestItems[existingIndex].quantity += quantity;
       } else {
         try{
-          const productRes = await axios.get(`http://localhost:8080/auth/food/${productId}`);
+          const productRes = await axios.get(`  localhost:8080/auth/food/${productId}`);
     const product = productRes.data;
 
     guestItems.push({

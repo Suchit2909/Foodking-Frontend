@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
-import {setCartId, getCartItems, setGuestMode } from "./cartItemSlice";
+import API from "../Utils/api";
+
 
 
 export const loginUser = createAsyncThunk(
@@ -9,7 +9,7 @@ export const loginUser = createAsyncThunk(
     const { dispatch } = thunkAPI;
 
     try {
-      const response = await axios.post("http://localhost:8080/api/auth/login", formData);
+      const response = await API.post("/auth/login", formData);
 
        return response.data;
 
@@ -22,7 +22,7 @@ export const loginUser = createAsyncThunk(
 
 export const registerUser = createAsyncThunk('authentication/registerUser', async(userData,{rejectWithValue})=>{
     try {
-        const response = await axios.post('http://localhost:8080/api/auth/register', userData);
+        const response = await API.post('/auth/register', userData);
         console.log('Registration API success:', response.data);  
     return response.data;
     } catch (error) {
@@ -36,12 +36,14 @@ export const verifyOtp = createAsyncThunk(
     "auth/verifyOtp",
     async ({ email, otp }, { rejectWithValue }) => {
       try {
-        const response = await axios.post("http://localhost:8080/api/auth/verify", { email, otp });
+        const response = await API.post("/auth/verify", { email, otp });
         console.log('Verify otp:', response.data);  
         return response.data;
       } catch (err) {
         console.log('Verify error:', err);
-        return rejectWithValue(err.response.data.message);
+        return rejectWithValue(
+  err.response?.data?.message || "OTP verification failed"
+);
       }
     }
   );
@@ -50,7 +52,7 @@ export const verifyOtp = createAsyncThunk(
     "auth/regenerateOtp",
     async (email, { rejectWithValue }) => {
       try {
-        const response = await axios.post("http://localhost:8080/api/auth/regenerateOtp", null, {
+        const response = await API.post("/auth/regenerateOtp", null, {
           params: { email }
         });
         console.log('OTP regeneration successful:', response.data);
@@ -100,6 +102,7 @@ const authSlice = createSlice({
         .addCase(loginUser.fulfilled, (state, action) => {
           console.log("Login success block hit");
          const { token, username, userId, role, cart } = action.payload;
+         state.loading = false;
       state.token = token;
       state.username = username;
       state.userId = userId;

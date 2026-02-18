@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchLatestOrderByUserId } from "../Slice/orderSlice";
+import { fetchLatestOrderByUserId,fetchOrdersByUserId } from "../Slice/orderSlice";
 import { formatPriceUSD } from "../Component/currencyFormatter";
 
 const OrderPage = () => {
@@ -8,7 +8,7 @@ const OrderPage = () => {
   const { latestOrder, loading, error } = useSelector((state) => state.orders);
 
   useEffect(() => {
-    dispatch(fetchLatestOrderByUserId());
+    dispatch(fetchOrdersByUserId());
   }, [dispatch]);
 
   if (loading) return <p className="text-center mt-20 text-lg">Loading...</p>;

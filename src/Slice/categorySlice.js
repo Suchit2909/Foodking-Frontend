@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+
+  import API from "../Utils/api";
 
 export const fetchCategories = createAsyncThunk(
     'categories/fetchCategories',
     async () => {
-        const response = await axios.get('http://localhost:8080/api/auth/category');
+        const response = await API.get('/auth/category');
         return response.data;
     }
 );
@@ -13,7 +14,7 @@ export const fetchcategoriesById = createAsyncThunk(
     'categories/fetchcategoriesById', 
     async(categoryId, {rejectWithValue}) =>{
         try {
-            const response = await axios.get(`http://localhost:8080/api/auth/categories/${categoryId}`);
+            const response = await API.get(`/auth/categories/${categoryId}`);
             console.log(response.data);
         return response.data;
         

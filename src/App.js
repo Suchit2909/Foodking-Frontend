@@ -33,14 +33,15 @@ import OrderPage from "./Pages/OrderPage";
 import Testimonial from "./Component/Testimonial";
 import ScrollToTop from "./Component/ScrollToTop";
 import WishlistPage from "./Component/WishlistPage";
+import OrderSucess from "./Component/OrderSucess";
 
 const App = () => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.authentication.token);
- const userId = useSelector((state) => state.authentication.user?.id); 
+ const userId = useSelector((state) => state.authentication.userId); 
   useEffect(() => {
   if (token && userId) {
-    dispatch(fetchCart(userId));
+    
      dispatch(fetchCartItemsByUser(userId));
   }
 }, [dispatch,token,userId]);
@@ -66,6 +67,7 @@ const App = () => {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/checkout" element={<CheckOutPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/order-success/:orderId" element={<OrderSucess />} />
           <Route
             path="/admin"
             element={
